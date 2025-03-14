@@ -8,9 +8,10 @@ This project is a General Purpose full-stack web scraper for Multi e-commerce we
 - Download the scraped data as an Excel file
 
 ## Screenshots
+![Screenshot 2](screenshot3.png)
 ![Screenshot 1](screenshot1.png)
 ![Screenshot 2](screenshot2.png)
-![Screenshot 2](screenshot3.png)
+
 
 ## Installation
 
