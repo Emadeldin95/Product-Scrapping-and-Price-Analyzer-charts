@@ -13,5 +13,3 @@ ENV/
 
 # Other files to ignore
 *.log
-*.csv
-*.xlsx
