@@ -16,27 +16,39 @@ class Scraper:
         for attempt in range(self.max_retries):
             try:
                 async with async_playwright() as p:
-                    browser = await p.chromium.launch(headless=False)
-                    page = await browser.new_page()
+                    browser = await p.chromium.launch(headless=False, slow_mo=500)  # Debugging mode
+
+                    # ✅ Use browser context to set user-agent
+                    context = await browser.new_context(
+                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                    )
+                    page = await context.new_page()
 
                     is_noon = "noon.com" in self.url
 
-                    # ✅ **Skip Noon Search Bar - Use URL Instead**
+                    # ✅ Skip Noon Search Bar - Use URL Instead
                     if is_noon and self.keywords:
                         search_params = urlencode({"q": self.keywords})
                         self.url = f"{self.url.rstrip('/')}/search?{search_params}"
 
                     try:
-                        await page.goto(self.url, wait_until="networkidle")
+                        print(f"🔄 Navigating to {self.url}")
+                        await page.goto(self.url, wait_until="domcontentloaded", timeout=60000)  # Increased timeout
+                        print("✅ Page loaded successfully!")
+
                     except PlaywrightTimeoutError:
                         print(f"⚠ Failed to load {self.url}, retrying...")
                         await browser.close()
                         continue
 
+                    # ✅ Scroll Down to Trigger Lazy Loading
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    await asyncio.sleep(3)  # Allow time for JavaScript to render products
+
                     # **Dynamic Product Selectors**
                     product_selectors = {
                         "default": [
-                            '.product-wrapper',
+                            '.product-wrapper',  # General product container
                             'li.entry.has-media',
                             '.product'
                         ],
@@ -66,8 +78,10 @@ class Scraper:
                             product_container = await page.query_selector_all(product_selector)
 
                         if not product_container:
-                            print("⚠ No products found on this page.")
+                            print("⚠ No products found. Check selectors!")
                             break
+
+                        print(f"✅ Found {len(product_container)} products!")
 
                         for product in product_container:
                             if not self.running:
