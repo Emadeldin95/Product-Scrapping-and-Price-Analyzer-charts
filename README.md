@@ -1,7 +1,7 @@
 # Multi E-Commerce Scraper with Dash UI and Analysis
 
 ## Description
-This project is a General Purpose full-stack web scraper and Analyzer for Multi e-commerce websites built with Playwright and Dash. The Dash app allows users to:
+This project is a General Purpose full-stack web scraper and Analyzer for wordpress woocommerce websites built with Playwright and Dash. The Dash app allows users to:
 - Start, pause, and stop scraping
 - Specify a shop URL and optional search keywords
 - View scraped data in real-time
