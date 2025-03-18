@@ -5,13 +5,13 @@ def create_layout():
     return dbc.Container([
         html.H1("E-Commerce Scraper Dashboard", className="text-center my-4"),
 
-        # Live status and count indicators
+        # **Live status and count indicators (Always Visible)**
         dbc.Row([
             dbc.Col(html.Div(id="status-indicator", children="Scraper Stopped 🔴",
                              style={"fontSize": "20px", "marginBottom": "10px"}), width=6),
             dbc.Col(html.Div(id="counter-indicator", children="Total Products Scraped: 0",
                              style={"fontSize": "20px", "marginBottom": "10px"}), width=6),
-        ]),
+        ], className="mb-3"),
 
         # Input fields for URL and keyword
         dbc.Row([
@@ -28,9 +28,6 @@ def create_layout():
 
         html.Hr(),
 
-        # Auto-refresh every second for status updates
-        dcc.Interval(id="interval-component", interval=1000, n_intervals=0),
-
         # **Tabs for Scraped Data & Analytics**
         dcc.Tabs(id="tabs", value="table", children=[
             dcc.Tab(label="Scraped Data", value="table"),
@@ -39,6 +36,8 @@ def create_layout():
 
         # **Container that switches between Data Table & Analytics**
         html.Div(id="tabs-content"),
+
+        dcc.Interval(id="interval-component", interval=1000, n_intervals=0),
 
         dcc.Download(id="download-dataframe-csv")
     ], fluid=True)

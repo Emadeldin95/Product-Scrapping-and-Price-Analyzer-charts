@@ -36,14 +36,43 @@ def update_callback(data):
     data_store = data
 
 @app.callback(
-    [Output("data-table", "data"), Output("status-indicator", "children"), Output("counter-indicator", "children")],
+    [Output("data-table", "data", allow_duplicate=True), 
+     Output("status-indicator", "children"), 
+     Output("counter-indicator", "children")],
     Input("interval-component", "n_intervals"),
     Input("start-btn", "n_clicks"),
     Input("stop-btn", "n_clicks"),
     State("url-input", "value"),
     State("keyword-input", "value"),
+    State("tabs", "value"),  # Add tabs state to check if "table" is active
     prevent_initial_call=True
 )
+def control_scraping_and_update_table(n_intervals, start, stop, url, keywords, active_tab):
+    """Manages the scraping process, updates the table, live status indicator, and product counter."""
+    global scraper, scraper_thread, scraping_status
+
+    triggered_id = ctx.triggered_id
+
+    if triggered_id == "start-btn" and url:
+        if not scraper_thread or not scraper_thread.is_alive():
+            scraper_thread = threading.Thread(target=run_scraper, args=(url, keywords), daemon=True)
+            scraper_thread.start()
+            scraping_status = "Active"
+
+    elif triggered_id == "stop-btn" and scraper:
+        scraper.stop()
+        scraping_status = "Stopped"
+
+    status_text = "Scraping Active 🟢" if scraping_status == "Active" else "Scraper Stopped 🔴"
+    product_count = len(data_store)
+    counter_text = f"Total Products Scraped: {product_count}"
+
+    # Prevent error when "Analytics" tab is active
+    if active_tab != "table":
+        return dash.no_update, status_text, counter_text
+
+    return data_store, status_text, counter_text
+
 def control_scraping_and_update_table(n_intervals, start, stop, url, keywords):
     """Manages the scraping process, updates the table, live status indicator, and product counter."""
     global scraper, scraper_thread, scraping_status
@@ -83,17 +112,17 @@ def download_data(n_clicks):
     prevent_initial_call=True
 )
 def update_analytics(n_intervals):
-    """Updates the analytics tab dynamically."""
+    """Updates the analytics tab dynamically with improved styling and cards."""
     if not data_store:
-        return html.Div("No data available yet.", style={"textAlign": "center", "color": "red"})
+        return html.Div("No data available yet.", style={"textAlign": "center", "color": "red", "marginTop": "20px"})
 
     df = pd.DataFrame(data_store)
 
-    # Convert prices to numbers
+    # Convert prices to numeric format
     df["Price"] = df["Price"].str.replace(",", "", regex=True).str.extract(r"(\d+)").astype(float)
 
     if df["Price"].dropna().empty:
-        return html.Div("No price data available for analytics.", style={"textAlign": "center", "color": "red"})
+        return html.Div("No price data available for analytics.", style={"textAlign": "center", "color": "red", "marginTop": "20px"})
 
     # Summary statistics
     lowest_price = df["Price"].min()
@@ -103,28 +132,56 @@ def update_analytics(n_intervals):
 
     # Price Distribution Histogram
     price_hist = px.histogram(df, x="Price", nbins=20, title="Price Distribution")
+    price_hist.update_layout(margin=dict(l=40, r=40, t=50, b=40))
 
-    # Box Plot to show price variations
+    # Box Plot for Price Variability
     box_plot = px.box(df, y="Price", title="Price Variability")
+    box_plot.update_layout(margin=dict(l=40, r=40, t=50, b=40))
 
-    # Summary Table
-    summary_table = dash_table.DataTable(
-        columns=[{"name": "Statistic", "id": "stat"}, {"name": "Value", "id": "value"}],
-        data=[
-            {"stat": "Lowest Price", "value": f"{lowest_price} EGP"},
-            {"stat": "Highest Price", "value": f"{highest_price} EGP"},
-            {"stat": "Average Price", "value": f"{avg_price:.2f} EGP"},
-            {"stat": "Median Price", "value": f"{median_price} EGP"}
-        ],
-        style_table={"marginTop": "20px"}
+    # Styled Summary Table
+    summary_card = dbc.Card(
+        dbc.CardBody([
+            html.H4("Summary Statistics", className="card-title text-center"),
+            dash_table.DataTable(
+                columns=[{"name": "Statistic", "id": "stat"}, {"name": "Value", "id": "value"}],
+                data=[
+                    {"stat": "Lowest Price", "value": f"{lowest_price} EGP"},
+                    {"stat": "Highest Price", "value": f"{highest_price} EGP"},
+                    {"stat": "Average Price", "value": f"{avg_price:.2f} EGP"},
+                    {"stat": "Median Price", "value": f"{median_price} EGP"}
+                ],
+                style_table={"marginTop": "15px", "width": "100%"},
+                style_header={"backgroundColor": "#007bff", "color": "white", "textAlign": "center"},
+                style_cell={"textAlign": "center", "padding": "10px", "fontSize": "14px"}
+            )
+        ]),
+        className="mb-4 shadow-sm"
     )
 
-    return html.Div([
-        html.H4("Price Analytics", style={"textAlign": "center", "marginBottom": "20px"}),
-        dcc.Graph(figure=price_hist),
-        dcc.Graph(figure=box_plot),
-        summary_table
-    ])
+    # Card for Histogram
+    hist_card = dbc.Card(
+        dbc.CardBody([
+            html.H4("Price Distribution", className="card-title text-center"),
+            dcc.Graph(figure=price_hist)
+        ]),
+        className="mb-4 shadow-sm"
+    )
+
+    # Card for Box Plot
+    box_card = dbc.Card(
+        dbc.CardBody([
+            html.H4("Price Variability", className="card-title text-center"),
+            dcc.Graph(figure=box_plot)
+        ]),
+        className="mb-4 shadow-sm"
+    )
+
+    return dbc.Container([
+        html.H4("Price Analytics", className="text-center my-4"),
+        summary_card,
+        hist_card,
+        box_card
+    ], fluid=True)
 
 @app.callback(
     Output("tabs-content", "children"),
@@ -163,7 +220,4 @@ def update_tabs(selected_tab):
         ])
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
-    
-    
-##notes:analytics tab pauses the scrapping process untill further updates
+    app.run(debug=True)
