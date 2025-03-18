@@ -1,4 +1,4 @@
-# E-Commerce Scraper with Dash UI
+# Multi E-Commerce Scraper with Dash UI and Analysis
 
 ## Description
 This project is a General Purpose full-stack web scraper and Analyzer for Multi e-commerce websites built with Playwright and Dash. The Dash app allows users to:
