@@ -1,5 +1,5 @@
 from dash import dcc, html, dash_table
-import dash_bootstrap_components as dbc
+import dash_bootstrap_components as dbc 
 
 def create_layout():
     return dbc.Container([
@@ -15,7 +15,16 @@ def create_layout():
 
         # Input fields for URL and keyword
         dbc.Row([
-            dbc.Col(dbc.Input(id="url-input", type="text", placeholder="Enter Shop URL", className="mb-2"), width=6),
+            #dbc.Col(dbc.Input(id="url-input", type="text", placeholder="Enter Shop URL", className="mb-2"), width=6),
+            dbc.Col(dcc.Dropdown(
+                id="url-input",
+                options=[
+                    {"label": "Maker's Electronics", "value": "https://makerselectronics.com/products"},
+                    {"label": "Electra Store", "value": "https://electra.store/shop/"}
+                ],
+                placeholder="Select Shop URL",
+                className="mb-2"
+            ), width=6),
             dbc.Col(dbc.Input(id="keyword-input", type="text", placeholder="Optional: Enter Keywords", className="mb-2"), width=6),
         ]),
 
